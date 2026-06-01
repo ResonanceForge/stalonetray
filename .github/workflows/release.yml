@@ -19,7 +19,7 @@ jobs:
 
     outputs:
       next-version: ${{ steps.next-version.outputs.version }}
-      has-next-version: ${{ steps.next-version.outputs.hasNextVersion }}
+      should-release: ${{ steps.gate.outputs.shouldRelease }}
 
     steps:
       - uses: actions/checkout@v5
@@ -29,16 +29,36 @@ jobs:
       - id: next-version
         uses: thenativeweb/get-next-version@2.7.1
 
-      - name: Show the next version
+      - name: Install meson
+        run: pip install 'meson>=1.5.0'
+
+      - name: Decide whether to release
+        id: gate
         run: |
-          echo "Should bump version: ${{ steps.next-version.outputs.hasNextVersion }}"
-          echo "Next version: ${{ steps.next-version.outputs.version }}"
+          mesonV=$(meson introspect meson.build --projectinfo | jq -r .version)
+          wantedV="${{ steps.next-version.outputs.version }}"
+          shouldBump="${{ steps.next-version.outputs.hasNextVersion }}"
+
+          echo "Should bump version: $shouldBump"
+          echo "Next version: $wantedV"
+          echo "Current version on meson.build: $mesonV"
+
+          if "$shouldBump" && [ "$mesonV" = "$wantedV" ]; then
+            echo "Version bump present in meson.build; releasing"
+            echo "shouldRelease=true" >> "$GITHUB_OUTPUT"
+          elif "$shouldBump"; then
+            echo "::warning::Commits warrant $wantedV but meson.build is $mesonV; skipping release"
+            echo "shouldRelease=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "No version change detected, nothing to do"
+            echo "shouldRelease=false" >> "$GITHUB_OUTPUT"
+          fi
 
   create-release:
     name: Create
     runs-on: ubuntu-latest
 
-    if: needs.new-version.outputs.has-next-version == 'true'
+    if: needs.new-version.outputs.should-release == 'true'
     needs: [new-version]
 
     steps:

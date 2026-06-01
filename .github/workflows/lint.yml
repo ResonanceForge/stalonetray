@@ -6,7 +6,28 @@ on:
       - master
   pull_request: {}
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
+  conventional-commits:
+    name: Conventional Commits
+    runs-on: ubuntu-latest
+
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check commit messages
+        uses: webiny/action-conventional-commits@v1.4.2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          allowed-commit-types: "feat,fix,chore,refactor,ci,docs,build"
+
   new-version:
     name: Version Bump Check
     runs-on: ubuntu-latest
