@@ -74,7 +74,7 @@ void xinerama_update_geometry(void)
     unsigned int dummy;
     int x = 0, y = 0, flags, monitor;
 
-    if (!tray_data.xinerama_active)
+    if (!tray_data.xinerama_active || settings.monitor == -1)
         return;
 
     LOG_TRACE(("Updating geometry based on chosen Xinerama monitor\n"));

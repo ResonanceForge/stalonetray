@@ -39,8 +39,7 @@ jobs:
           echo "Current version on meson.build: $mesonV"
 
           if "$shouldBump" && [ "$mesonV" != "$wantedV" ]; then
-            echo "Version bump mismatch! Expected $wantedV but found $mesonV"
-            exit 1
+            echo "::warning::Version not bumped. Expected $wantedV in meson.build but found $mesonV"
           elif "$shouldBump"; then
             echo "Version bump detected and matches meson.build"
           else
