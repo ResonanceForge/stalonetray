@@ -80,3 +80,17 @@ jobs:
 
       - name: Run meson-format
         run: meson format --recursive -q
+
+  clang-format:
+    name: Clang Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      - name: Install clang-format
+        run: pip install 'clang-format==22.*'
+
+      - name: Check formatting
+        run: clang-format --dry-run --Werror src/*.c src/*.h
