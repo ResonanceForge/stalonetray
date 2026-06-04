@@ -396,6 +396,30 @@ static void test_cmdline_inline_value(void **state)
   assert_int_equal(run_cmdline(3, argv, err, sizeof(err)), 0);
 }
 
+/* A '-' followed by a digit is a value (a negative number), not the next
+ * option, so --monitor -1 parses just like the --monitor=-1 form. */
+static void test_cmdline_negative_value_is_consumed(void **state)
+{
+  (void)state;
+  char *argv[] = {(char *)"stalonetray", (char *)"--monitor", (char *)"-1",
+      (char *)"--help", NULL};
+  char err[1024];
+  assert_int_equal(run_cmdline(4, argv, err, sizeof(err)), 0);
+}
+
+/* A '-' followed by a non-digit is still an option: an option needing a value
+ * is not fed the following flag as one, so the negative-number exception does
+ * not swallow real options. */
+static void test_cmdline_option_after_value_option_still_errors(void **state)
+{
+  (void)state;
+  char *argv[] = {
+      (char *)"stalonetray", (char *)"--monitor", (char *)"--vertical", NULL};
+  char err[1024];
+  assert_int_equal(run_cmdline(3, argv, err, sizeof(err)), 255);
+  assert_non_null(strstr(err, "expects an argument"));
+}
+
 static void test_cmdline_optional_arg_hands_back_bad_token(void **state)
 {
   (void)state;
@@ -416,6 +440,8 @@ int main(void)
       cmocka_unit_test(test_cmdline_help_exits_zero),
       cmocka_unit_test(test_cmdline_separate_value_is_consumed),
       cmocka_unit_test(test_cmdline_inline_value),
+      cmocka_unit_test(test_cmdline_negative_value_is_consumed),
+      cmocka_unit_test(test_cmdline_option_after_value_option_still_errors),
       cmocka_unit_test(test_cmdline_optional_arg_hands_back_bad_token),
       cmocka_unit_test_setup_teardown(
           test_init_default_settings_strdups_strings, reset_settings,
