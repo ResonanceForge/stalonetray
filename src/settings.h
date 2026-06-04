@@ -116,15 +116,17 @@ void init_default_settings(void);
 /* Read settings from cmd line and configuration file */
 int read_settings(int argc, char **argv);
 /* Parse the rc file at settings.config_fname (or the default search path if
- * NULL) into the active settings target. Returns SUCCESS / FAILURE; on the
- * first call a syntax error DIEs, on later calls it logs and returns
- * FAILURE. Exposed for testing -- normal code goes through read_settings or
+ * NULL) into the active settings target. Returns SUCCESS / FAILURE. With
+ * reloading == False (initial load) a syntax error DIEs; with reloading ==
+ * True (SIGHUP reload) it logs, returns FAILURE, and skips non-reloadable
+ * params. Exposed for testing -- normal code goes through read_settings or
  * settings_reload. */
-int parse_rc(void);
+int parse_rc(int reloading);
 /* Parse one command-line pass into the active settings target. An unknown
  * option, a missing required value, or an unparseable value prints the usage
- * and exits. Exposed for testing -- normal code goes through read_settings. */
-int parse_cmdline(int argc, char **argv, int pass);
+ * and exits. With reloading == True (SIGHUP reload) non-reloadable options are
+ * skipped. Exposed for testing -- normal code goes through read_settings. */
+int parse_cmdline(int argc, char **argv, int pass, int reloading);
 /* Interpret all settings that either need an
  * open display or are interpreted from other
  * settings */
