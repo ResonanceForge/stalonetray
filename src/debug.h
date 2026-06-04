@@ -54,37 +54,36 @@ void print_message_to_stderr(const char *fmt, ...)
 /* Print the debug header as specified by defines below */
 void print_trace_header(
     const char *funcname, const char *fname, const int line);
-#define PRINT_TRACE_HEADER() \
-    do { \
-        print_trace_header(__FUNC__, __FILE__, __LINE__); \
-    } while (0)
+#define PRINT_TRACE_HEADER()                          \
+  do {                                                \
+    print_trace_header(__FUNC__, __FILE__, __LINE__); \
+  } while (0)
 /* Print the debug message of specified level */
-#define LOG_TRACE(message) \
-    do { \
-        if (!debug_output_disabled \
-            && settings.log_level >= LOG_LEVEL_TRACE) { \
-            PRINT_TRACE_HEADER(); \
-            print_message_to_stderr message; \
-        }; \
-    } while (0)
+#define LOG_TRACE(message)                                                 \
+  do {                                                                     \
+    if (!debug_output_disabled && settings.log_level >= LOG_LEVEL_TRACE) { \
+      PRINT_TRACE_HEADER();                                                \
+      print_message_to_stderr message;                                     \
+    };                                                                     \
+  } while (0)
 
-#define LOG_ERROR(message) \
-    do { \
-        if (!debug_output_disabled) { \
-            if (settings.log_level >= LOG_LEVEL_TRACE) PRINT_TRACE_HEADER(); \
-            if (settings.log_level >= LOG_LEVEL_ERR) \
-                print_message_to_stderr message; \
-        } \
-    } while (0)
+#define LOG_ERROR(message)                                             \
+  do {                                                                 \
+    if (!debug_output_disabled) {                                      \
+      if (settings.log_level >= LOG_LEVEL_TRACE) PRINT_TRACE_HEADER(); \
+      if (settings.log_level >= LOG_LEVEL_ERR)                         \
+        print_message_to_stderr message;                               \
+    }                                                                  \
+  } while (0)
 
-#define LOG_INFO(message) \
-    do { \
-        if (!debug_output_disabled) { \
-            if (settings.log_level >= LOG_LEVEL_TRACE) PRINT_TRACE_HEADER(); \
-            if (settings.log_level >= LOG_LEVEL_INFO) \
-                print_message_to_stderr message; \
-        } \
-    } while (0)
+#define LOG_INFO(message)                                              \
+  do {                                                                 \
+    if (!debug_output_disabled) {                                      \
+      if (settings.log_level >= LOG_LEVEL_TRACE) PRINT_TRACE_HEADER(); \
+      if (settings.log_level >= LOG_LEVEL_INFO)                        \
+        print_message_to_stderr message;                               \
+    }                                                                  \
+  } while (0)
 
 /* Print the summary of icon data */
 int print_icon_data(struct TrayIcon *ti);

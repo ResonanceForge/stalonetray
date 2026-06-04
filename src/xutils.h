@@ -33,8 +33,8 @@ int x11_send_expose(
     Display *dpy, Window dst, int x, int y, int width, int height);
 
 /* Same for button event */
-int x11_send_button(Display *dpy, int press, Window dst, Window root,
-    Time time, unsigned int button, unsigned int state, int x, int y);
+int x11_send_button(Display *dpy, int press, Window dst, Window root, Time time,
+    unsigned int button, unsigned int state, int x, int y);
 
 /* Refresh window */
 int x11_refresh_window(
@@ -55,11 +55,11 @@ int x11_get_window_prop32(Display *dpy, Window dst, Atom atom, Atom type,
 
 /* Retrive window-list property from the specified window */
 #define x11_get_winlist_prop(dpy, dst, atom, data, len) \
-    x11_get_window_prop32(dpy, dst, atom, XA_WINDOW, data, len)
+  x11_get_window_prop32(dpy, dst, atom, XA_WINDOW, data, len)
 
 /* Shortcut for the root window case */
 #define x11_get_root_winlist_prop(dpy, atom, data, len) \
-    x11_get_winlist_prop(dpy, DefaultRootWindow(dpy), atom, data, len)
+  x11_get_winlist_prop(dpy, DefaultRootWindow(dpy), atom, data, len)
 
 /* Returns window absolute position (relative to the root window) */
 int x11_get_window_abs_coords(Display *dpy, Window dst, int *x, int *y);
@@ -116,8 +116,8 @@ void x11_dump_win_info(Display *dpy, Window w);
 
 /* Dummy delcaration */
 #define x11_dump_win_info(dpy, w) \
-    do { \
-    } while (0);
+  do {                            \
+  } while (0);
 #endif
 
 #endif
