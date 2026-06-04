@@ -93,4 +93,4 @@ jobs:
         run: pip install 'clang-format==22.*'
 
       - name: Check formatting
-        run: clang-format --dry-run --Werror src/*.c src/*.h
+        run: clang-format --dry-run --Werror src/*.c src/*.h tests/*.c

@@ -1504,6 +1504,15 @@ static struct Param *cmdline_match(const char *arg, const char **inline_val)
   return NULL;
 }
 
+/* True if the next token should be consumed as an option's value rather than
+ * read as the following option. A leading '-' normally marks an option, but a
+ * '-' followed by a digit is a negative number (e.g. --monitor -1), which is a
+ * value. No option name begins with '-<digit>', so this never shadows one. */
+static int cmdline_is_value(const char *arg)
+{
+  return arg[0] != '-' || isdigit((unsigned char)arg[1]);
+}
+
 /* Parse one command-line pass.
  *
  * Each token is matched to a params[] entry; an unknown one prints the usage
@@ -1538,7 +1547,7 @@ int parse_cmdline(int argc, char **argv, int pass)
       slot[0] = inline_val;
       values = slot;
       count = 1;
-    } else if (match->max_argc != 0 && argc > 1 && argv[1][0] != '-') {
+    } else if (match->max_argc != 0 && argc > 1 && cmdline_is_value(argv[1])) {
       slot[0] = *(++argv);
       argc--;
       took_next = 1;
