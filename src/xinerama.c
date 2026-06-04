@@ -20,139 +20,130 @@
 #ifdef _ST_WITH_XINERAMA
 static void xinerama_query_monitors(Display *dpy)
 {
-    if (tray_data.monitors != NULL) {
-        XFree(tray_data.monitors);
-        tray_data.monitors = NULL;
-    }
-    tray_data.n_monitors = 0;
+  if (tray_data.monitors != NULL) {
+    XFree(tray_data.monitors);
+    tray_data.monitors = NULL;
+  }
+  tray_data.n_monitors = 0;
 
-    if (!XineramaIsActive(dpy)) {
-        tray_data.xinerama_active = False;
-        LOG_TRACE(("Xinerama is not active\n"));
-        return;
-    }
+  if (!XineramaIsActive(dpy)) {
+    tray_data.xinerama_active = False;
+    LOG_TRACE(("Xinerama is not active\n"));
+    return;
+  }
 
-    tray_data.xinerama_active = True;
-    tray_data.monitors = XineramaQueryScreens(dpy, &tray_data.n_monitors);
+  tray_data.xinerama_active = True;
+  tray_data.monitors = XineramaQueryScreens(dpy, &tray_data.n_monitors);
 
-    LOG_TRACE(("Xinerama reports %d monitors\n", tray_data.n_monitors));
+  LOG_TRACE(("Xinerama reports %d monitors\n", tray_data.n_monitors));
 }
 #endif
 
 void xinerama_init(Display *dpy)
 {
 #if !defined(_ST_WITH_XINERAMA) && !defined(_ST_WITH_XRANDR)
-    (void) dpy; /* unused */
+  (void)dpy; /* unused */
 #endif
 #ifdef _ST_WITH_XINERAMA
-    xinerama_query_monitors(dpy);
+  xinerama_query_monitors(dpy);
 #endif
 #ifdef _ST_WITH_XRANDR
-    {
-        int error_base;
-        if (XRRQueryExtension(dpy, &tray_data.randr_event_base, &error_base)) {
-            /* CRTC/output changes are needed to catch monitors being moved
-             * relative to one another, which need not change the screen size
-             * the way adding or removing a monitor does. */
-            XRRSelectInput(dpy, DefaultRootWindow(dpy),
-                RRScreenChangeNotifyMask | RRCrtcChangeNotifyMask
-                    | RROutputChangeNotifyMask);
-            LOG_TRACE(("RandR active, event base %d\n",
-                tray_data.randr_event_base));
-        } else {
-            tray_data.randr_event_base = -1;
-            LOG_TRACE(("RandR is not available\n"));
-        }
+  {
+    int error_base;
+    if (XRRQueryExtension(dpy, &tray_data.randr_event_base, &error_base)) {
+      /* CRTC/output changes are needed to catch monitors being moved
+       * relative to one another, which need not change the screen size
+       * the way adding or removing a monitor does. */
+      XRRSelectInput(dpy, DefaultRootWindow(dpy),
+          RRScreenChangeNotifyMask | RRCrtcChangeNotifyMask
+              | RROutputChangeNotifyMask);
+      LOG_TRACE(("RandR active, event base %d\n", tray_data.randr_event_base));
+    } else {
+      tray_data.randr_event_base = -1;
+      LOG_TRACE(("RandR is not available\n"));
     }
+  }
 #endif
 }
 
 void xinerama_update_geometry(void)
 {
 #ifdef _ST_WITH_XINERAMA
-    XineramaScreenInfo chosen_monitor;
-    unsigned int dummy;
-    int x = 0, y = 0, flags, monitor;
+  XineramaScreenInfo chosen_monitor;
+  unsigned int dummy;
+  int x = 0, y = 0, flags, monitor;
 
-    if (!tray_data.xinerama_active || settings.monitor == -1)
-        return;
+  if (!tray_data.xinerama_active || settings.monitor == -1) return;
 
-    LOG_TRACE(("Updating geometry based on chosen Xinerama monitor\n"));
+  LOG_TRACE(("Updating geometry based on chosen Xinerama monitor\n"));
 
-    flags = XParseGeometry(settings.geometry_str, &x, &y, &dummy, &dummy);
+  flags = XParseGeometry(settings.geometry_str, &x, &y, &dummy, &dummy);
 
-    /* The configured monitor may no longer exist (e.g. it was unplugged).
-     * Clamp to the available range without mutating settings.monitor, so the
-     * tray returns to the requested monitor once it comes back. */
-    monitor = settings.monitor;
-    if (monitor >= tray_data.n_monitors)
-        monitor = tray_data.n_monitors - 1;
-    if (monitor < 0)
-        monitor = 0;
-    chosen_monitor = tray_data.monitors[monitor];
+  /* The configured monitor may no longer exist (e.g. it was unplugged).
+   * Clamp to the available range without mutating settings.monitor, so the
+   * tray returns to the requested monitor once it comes back. */
+  monitor = settings.monitor;
+  if (monitor >= tray_data.n_monitors) monitor = tray_data.n_monitors - 1;
+  if (monitor < 0) monitor = 0;
+  chosen_monitor = tray_data.monitors[monitor];
 
-    LOG_TRACE(("Chosen monitor %d: %dx%d+%d+%d\n", monitor,
-        chosen_monitor.width, chosen_monitor.height, chosen_monitor.x_org,
-        chosen_monitor.y_org));
+  LOG_TRACE(("Chosen monitor %d: %dx%d+%d+%d\n", monitor, chosen_monitor.width,
+      chosen_monitor.height, chosen_monitor.x_org, chosen_monitor.y_org));
 
-    if (flags & XValue && flags & XNegative)
-        x += chosen_monitor.width - tray_data.xsh.width;
-    if (flags & YValue && flags & YNegative)
-        y += chosen_monitor.height - tray_data.xsh.height;
+  if (flags & XValue && flags & XNegative)
+    x += chosen_monitor.width - tray_data.xsh.width;
+  if (flags & YValue && flags & YNegative)
+    y += chosen_monitor.height - tray_data.xsh.height;
 
-    tray_data.xsh.x = chosen_monitor.x_org + x;
-    tray_data.xsh.y = chosen_monitor.y_org + y;
+  tray_data.xsh.x = chosen_monitor.x_org + x;
+  tray_data.xsh.y = chosen_monitor.y_org + y;
 
-    LOG_TRACE(("New tray position (x,y): %d,%d\n", tray_data.xsh.x, tray_data.xsh.y));
+  LOG_TRACE(
+      ("New tray position (x,y): %d,%d\n", tray_data.xsh.x, tray_data.xsh.y));
 #else
-    return;
+  return;
 #endif
 }
 
 void xinerama_handle_event(XEvent ev)
 {
 #if defined(_ST_WITH_XINERAMA) && defined(_ST_WITH_XRANDR)
-    XWindowAttributes root_wa;
-    int is_screen_change, is_randr_notify;
+  XWindowAttributes root_wa;
+  int is_screen_change, is_randr_notify;
 
-    if (tray_data.randr_event_base < 0)
-        return;
+  if (tray_data.randr_event_base < 0) return;
 
-    /* RRScreenChangeNotify covers screen-size changes (add/remove a monitor);
-     * RRNotify (CRTC/output changes) additionally covers monitors being moved
-     * relative to one another. Either way we re-derive everything. */
-    is_screen_change =
-        ev.type == tray_data.randr_event_base + RRScreenChangeNotify;
-    is_randr_notify = ev.type == tray_data.randr_event_base + RRNotify;
-    if (!is_screen_change && !is_randr_notify)
-        return;
+  /* RRScreenChangeNotify covers screen-size changes (add/remove a monitor);
+   * RRNotify (CRTC/output changes) additionally covers monitors being moved
+   * relative to one another. Either way we re-derive everything. */
+  is_screen_change =
+      ev.type == tray_data.randr_event_base + RRScreenChangeNotify;
+  is_randr_notify = ev.type == tray_data.randr_event_base + RRNotify;
+  if (!is_screen_change && !is_randr_notify) return;
 
-    LOG_TRACE(("RandR change received; reconfiguring monitors\n"));
+  LOG_TRACE(("RandR change received; reconfiguring monitors\n"));
 
-    if (is_screen_change)
-        XRRUpdateConfiguration(&ev);
-    xinerama_query_monitors(tray_data.dpy);
+  if (is_screen_change) XRRUpdateConfiguration(&ev);
+  xinerama_query_monitors(tray_data.dpy);
 
-    if (!tray_data.xinerama_active)
-        return;
+  if (!tray_data.xinerama_active) return;
 
-    /* Refresh the cached root window size; the screen bounding box changes
-     * when monitors are added or removed, and the strut autodetection relies
-     * on it. */
-    if (XGetWindowAttributes(
-            tray_data.dpy, DefaultRootWindow(tray_data.dpy), &root_wa)) {
-        tray_data.root_wnd.width = root_wa.width;
-        tray_data.root_wnd.height = root_wa.height;
-    }
+  /* Refresh the cached root window size; the screen bounding box changes
+   * when monitors are added or removed, and the strut autodetection relies
+   * on it. */
+  if (XGetWindowAttributes(
+          tray_data.dpy, DefaultRootWindow(tray_data.dpy), &root_wa)) {
+    tray_data.root_wnd.width = root_wa.width;
+    tray_data.root_wnd.height = root_wa.height;
+  }
 
-    /* Recompute the position as on startup and move the tray. The resulting
-     * ConfigureNotify on the tray window drives icon repositioning through the
-     * normal path; update the strut here too in case the move is a no-op. */
-    xinerama_update_geometry();
-    XMoveWindow(
-        tray_data.dpy, tray_data.tray, tray_data.xsh.x, tray_data.xsh.y);
-    tray_update_window_strut();
+  /* Recompute the position as on startup and move the tray. The resulting
+   * ConfigureNotify on the tray window drives icon repositioning through the
+   * normal path; update the strut here too in case the move is a no-op. */
+  xinerama_update_geometry();
+  XMoveWindow(tray_data.dpy, tray_data.tray, tray_data.xsh.x, tray_data.xsh.y);
+  tray_update_window_strut();
 #else
-    (void) ev; /* unused */
+  (void)ev; /* unused */
 #endif
 }

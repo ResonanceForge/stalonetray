@@ -28,16 +28,15 @@
 
 /* Scrollbar data */
 struct ScrollbarsData {
-    struct Point scroll_base; /* Base scroll position */
-    struct Point scroll_pos; /* Current scroll position */
-    Window scrollbar[SB_WND_MAX]; /* Window IDs of scrollbars */
-    XSizeHints
-        scrollbar_xsh[SB_WND_MAX]; /* Cached window sizes for scrollbars */
-    int scrollbar_down; /* Click state */
-    int scrollbar_highlighted; /* Highlight state */
-    int scrollbar_repeat_active; /* If repeat is active */
-    int scrollbar_repeat_counter; /* Countown for repeat action */
-    int scrollbar_repeats_done; /* Numberf of executed repeat actions */
+  struct Point scroll_base; /* Base scroll position */
+  struct Point scroll_pos; /* Current scroll position */
+  Window scrollbar[SB_WND_MAX]; /* Window IDs of scrollbars */
+  XSizeHints scrollbar_xsh[SB_WND_MAX]; /* Cached window sizes for scrollbars */
+  int scrollbar_down; /* Click state */
+  int scrollbar_highlighted; /* Highlight state */
+  int scrollbar_repeat_active; /* If repeat is active */
+  int scrollbar_repeat_counter; /* Countown for repeat action */
+  int scrollbar_repeats_done; /* Numberf of executed repeat actions */
 };
 
 /* Initialize data structures */

@@ -78,55 +78,55 @@
 
 /* Structure to hold all tray data */
 struct TrayData {
-    /* General */
-    Window tray; /* ID of tray window */
-    Window hint_win; /* ID of icon window */
-    Display *dpy; /* Display pointer */
-    XSizeHints xsh; /* Size & position of the tray window */
-    XSizeHints root_wnd; /* Size & position :) of the root window */
-    Window old_selection_owner; /* Old owner of tray selection */
-    int terminated; /* Exit flag */
-    int is_active; /* Is the tray active? */
-    int is_reparented; /* Was the tray reparented in smth like FvwmButtons ? */
-    int kde_tray_old_mode; /* Use legacy scheme to handle KDE icons via
-                              MapNotify */
+  /* General */
+  Window tray; /* ID of tray window */
+  Window hint_win; /* ID of icon window */
+  Display *dpy; /* Display pointer */
+  XSizeHints xsh; /* Size & position of the tray window */
+  XSizeHints root_wnd; /* Size & position :) of the root window */
+  Window old_selection_owner; /* Old owner of tray selection */
+  int terminated; /* Exit flag */
+  int is_active; /* Is the tray active? */
+  int is_reparented; /* Was the tray reparented in smth like FvwmButtons ? */
+  int kde_tray_old_mode; /* Use legacy scheme to handle KDE icons via
+                            MapNotify */
 
-    /* Atoms */
-    Atom xa_tray_selection; /* Atom: _NET_SYSTEM_TRAY_SELECTION_S<creen number>
-                             */
-    Atom xa_tray_opcode; /* Atom: _NET_SYSTEM_TRAY_MESSAGE_OPCODE */
-    Atom xa_tray_data; /* Atom: _NET_SYSTEM_TRAY_MESSAGE_DATA */
-    Atom xa_wm_protocols; /* Atom: WM_PROTOCOLS */
-    Atom xa_wm_delete_window; /* Atom: WM_DELETE_WINDOW */
-    Atom xa_net_wm_ping; /* Atom: WM_PING */
-    Atom xa_wm_take_focus; /* Atom: WM_TAKE_FOCUS */
-    Atom xa_kde_net_system_tray_windows; /* Atom: _KDE_NET_SYSTEM_TRAY_WINDOWS
-                                          */
-    Atom xa_net_client_list; /* Atom: _NET_CLIENT_LIST */
+  /* Atoms */
+  Atom xa_tray_selection; /* Atom: _NET_SYSTEM_TRAY_SELECTION_S<creen number>
+                           */
+  Atom xa_tray_opcode; /* Atom: _NET_SYSTEM_TRAY_MESSAGE_OPCODE */
+  Atom xa_tray_data; /* Atom: _NET_SYSTEM_TRAY_MESSAGE_DATA */
+  Atom xa_wm_protocols; /* Atom: WM_PROTOCOLS */
+  Atom xa_wm_delete_window; /* Atom: WM_DELETE_WINDOW */
+  Atom xa_net_wm_ping; /* Atom: WM_PING */
+  Atom xa_wm_take_focus; /* Atom: WM_TAKE_FOCUS */
+  Atom xa_kde_net_system_tray_windows; /* Atom: _KDE_NET_SYSTEM_TRAY_WINDOWS
+                                        */
+  Atom xa_net_client_list; /* Atom: _NET_CLIENT_LIST */
 
-    /* Background pixmap */
-    Atom xa_xrootpmap_id; /* Atom: _XROOTPMAP_ID */
-    Atom xa_xsetroot_id; /* Atom: _XSETROOT_ID */
-    Pixmap bg_pmap; /* Pixmap for tray background */
-    struct Point bg_pmap_dims; /* Background pixmap dimensions */
+  /* Background pixmap */
+  Atom xa_xrootpmap_id; /* Atom: _XROOTPMAP_ID */
+  Atom xa_xsetroot_id; /* Atom: _XSETROOT_ID */
+  Pixmap bg_pmap; /* Pixmap for tray background */
+  struct Point bg_pmap_dims; /* Background pixmap dimensions */
 
 #ifdef _ST_WITH_XINERAMA
-    /* Xinerama data */
-    int xinerama_active; /* Is Xinerama active? */
-    int n_monitors; /* Number of Xinerama screens */
-    XineramaScreenInfo *monitors; /* Xinerama screens info */
+  /* Xinerama data */
+  int xinerama_active; /* Is Xinerama active? */
+  int n_monitors; /* Number of Xinerama screens */
+  XineramaScreenInfo *monitors; /* Xinerama screens info */
 #endif
 
 #ifdef _ST_WITH_XRANDR
-    /* RandR data */
-    int randr_event_base; /* RandR event base, or -1 if RandR is unavailable */
+  /* RandR data */
+  int randr_event_base; /* RandR event base, or -1 if RandR is unavailable */
 #endif
 
-    /* XEMBED data */
-    struct XEMBEDData xembed_data; /* XEMBED data */
+  /* XEMBED data */
+  struct XEMBEDData xembed_data; /* XEMBED data */
 
-    /* Scrollbar data */
-    struct ScrollbarsData scrollbars_data;
+  /* Scrollbar data */
+  struct ScrollbarsData scrollbars_data;
 };
 extern struct TrayData tray_data;
 

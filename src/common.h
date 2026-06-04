@@ -26,23 +26,22 @@
 #define FAILURE 0
 
 /* Simple macro to return status and log it if necessary */
-#define RETURN_STATUS(rc) \
-    do { \
-        LOG_TRACE( \
-            ("status = %s\n", ((rc) == SUCCESS ? "SUCCESS" : "FAILURE"))); \
-        return rc; \
-    } while (0)
+#define RETURN_STATUS(rc)                                                    \
+  do {                                                                       \
+    LOG_TRACE(("status = %s\n", ((rc) == SUCCESS ? "SUCCESS" : "FAILURE"))); \
+    return rc;                                                               \
+  } while (0)
 
 /* Meaningful names for return values of icon mass-operations */
 #define MATCH 1
 #define NO_MATCH 0
 
 /* Simple macro to return mass-op status and log it if necessary */
-#define RETURN_MATCH(rc) \
-    do { \
-        LOG_TRACE(("status = %s\n", rc == MATCH : "MATCH" : "NO_MATCH")); \
-        return rc; \
-    } while (0)
+#define RETURN_MATCH(rc)                                              \
+  do {                                                                \
+    LOG_TRACE(("status = %s\n", rc == MATCH : "MATCH" : "NO_MATCH")); \
+    return rc;                                                        \
+  } while (0)
 
 /* Meaningful names for return values of icon mass-operations */
 #define MATCH 1
@@ -58,42 +57,41 @@
 /* DIE */
 #define DIEDIE() exit(-1)
 /* Print a message and... DIE */
-#define DIE(message) \
-    do { \
-        LOG_ERROR(message); \
-        DIEDIE(); \
-    } while (0)
+#define DIE(message)    \
+  do {                  \
+    LOG_ERROR(message); \
+    DIEDIE();           \
+  } while (0)
 /* Log OOM condition */
-#define LOG_ERR_IE(message) \
-    do { \
-        LOG_ERROR( \
-            ("Internal error, please report to maintaner (see AUTHORS)\n")); \
-        LOG_ERROR(message); \
-    } while (0);
+#define LOG_ERR_IE(message)                                                    \
+  do {                                                                         \
+    LOG_ERROR(("Internal error, please report to maintaner (see AUTHORS)\n")); \
+    LOG_ERROR(message);                                                        \
+  } while (0);
 /* DIE on internal error */
-#define DIE_IE(message) \
-    do { \
-        LOG_ERR_IE(message); \
-        DIEDIE(); \
-    } while (0)
+#define DIE_IE(message)  \
+  do {                   \
+    LOG_ERR_IE(message); \
+    DIEDIE();            \
+  } while (0)
 /* Log OOM condition */
-#define LOG_ERR_OOM(message) \
-    do { \
-        LOG_ERROR(("Out of memory\n")); \
-        LOG_ERROR(message); \
-    } while (0);
+#define LOG_ERR_OOM(message)        \
+  do {                              \
+    LOG_ERROR(("Out of memory\n")); \
+    LOG_ERROR(message);             \
+  } while (0);
 /* DIE on OOM error */
-#define DIE_OOM(message) \
-    do { \
-        LOG_ERR_OOM(message); \
-        DIEDIE(); \
-    } while (0)
+#define DIE_OOM(message)  \
+  do {                    \
+    LOG_ERR_OOM(message); \
+    DIEDIE();             \
+  } while (0)
 
 /*** WARNING: feed following macros only with side-effects-free expressions
  * ***/
 /* Get a value within target interval */
 #define cutoff(tgt, min, max) \
-    (tgt) < (min) ? (min) : ((tgt) > (max) ? max : tgt)
+  (tgt) < (min) ? (min) : ((tgt) > (max) ? max : tgt)
 /* Update value to fit into target interval */
 #define val_range(tgt, min, max) (tgt) = cutoff(tgt, min, max)
 
