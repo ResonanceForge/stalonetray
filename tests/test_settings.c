@@ -224,7 +224,7 @@ static int parse_rc_with_body(const char *body)
   char *path = write_tmp_rc(body);
   free(settings.config_fname);
   settings.config_fname = strdup(path);
-  int rc = parse_rc();
+  int rc = parse_rc(False);
   cleanup_tmp_rc(path);
   return rc;
 }
@@ -327,8 +327,8 @@ static int run_cmdline(int argc, char **argv, char *err, size_t errsz)
     close(fds[0]);
     close(fds[1]);
     init_default_settings();
-    parse_cmdline(argc, argv, 0);
-    parse_cmdline(argc, argv, 1);
+    parse_cmdline(argc, argv, 0, False);
+    parse_cmdline(argc, argv, 1, False);
     _exit(0);
   }
 
@@ -431,6 +431,38 @@ static void test_cmdline_optional_arg_hands_back_bad_token(void **state)
   assert_non_null(strstr(err, "notabool"));
 }
 
+/* Regression: a full load makes two passes -- pass 0 (options needed before
+ * the rc file) then pass 1 (everything else). A bug once made the second pass
+ * behave as a SIGHUP reload, silently dropping every option not flagged
+ * reloadable (geometry, icon size, slot size, scrollbars, ...). With
+ * reloading == False both passes must apply their options. */
+static void test_cmdline_load_applies_nonreloadable_options(void **state)
+{
+  (void)state;
+  char *argv[] = {(char *)"stalonetray", (char *)"--icon-size", (char *)"48",
+      (char *)"--geometry", (char *)"5x1+0+0", NULL};
+  parse_cmdline(5, argv, 0, False);
+  parse_cmdline(5, argv, 1, False);
+  assert_int_equal(settings.icon_size, 48);
+  assert_non_null(settings.geometry_str);
+  assert_string_equal(settings.geometry_str, "5x1+0+0");
+}
+
+/* The reload counterpart of the test above: with reloading == True a
+ * non-reloadable option (icon size) is skipped, while a reloadable one
+ * (background) still applies. */
+static void test_cmdline_reload_skips_nonreloadable_options(void **state)
+{
+  (void)state;
+  char *argv[] = {(char *)"stalonetray", (char *)"--icon-size", (char *)"48",
+      (char *)"--background", (char *)"salmon", NULL};
+  int icon_size_before = settings.icon_size;
+  parse_cmdline(5, argv, 0, True);
+  parse_cmdline(5, argv, 1, True);
+  assert_int_equal(settings.icon_size, icon_size_before);
+  assert_string_equal(settings.bg_color_str, "salmon");
+}
+
 int main(void)
 {
   const struct CMUnitTest tests[] = {
@@ -443,6 +475,12 @@ int main(void)
       cmocka_unit_test(test_cmdline_negative_value_is_consumed),
       cmocka_unit_test(test_cmdline_option_after_value_option_still_errors),
       cmocka_unit_test(test_cmdline_optional_arg_hands_back_bad_token),
+      cmocka_unit_test_setup_teardown(
+          test_cmdline_load_applies_nonreloadable_options, reset_settings,
+          teardown_settings),
+      cmocka_unit_test_setup_teardown(
+          test_cmdline_reload_skips_nonreloadable_options, reset_settings,
+          teardown_settings),
       cmocka_unit_test_setup_teardown(
           test_init_default_settings_strdups_strings, reset_settings,
           teardown_settings),
@@ -459,10 +497,8 @@ int main(void)
           reset_settings, teardown_settings),
       /* parse_rc value-level tests. Pattern to extend: write a one-line
        * rc with parse_rc_with_body(), then assert the field's new value
-       * on `settings`. Only reloadable params are guaranteed to be
-       * parsed here (parse_rc's static reloading flag flips to 1 after
-       * the first test above, and non-reloadable params get skipped
-       * from then on). */
+       * on `settings`. parse_rc_with_body() passes reloading == False, so
+       * both reloadable and non-reloadable params are parsed. */
       cmocka_unit_test_setup_teardown(
           test_parse_rc_string_field, reset_settings, teardown_settings),
       cmocka_unit_test_setup_teardown(

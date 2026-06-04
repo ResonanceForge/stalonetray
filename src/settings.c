@@ -1523,11 +1523,12 @@ static int cmdline_is_value(const char *arg)
  * whose grabbed token fails to parse hands that token back for the loop to
  * reconsider. A missing required value, or any other parse failure, exits.
  *
- * A static flag makes every call after the first behave as a reload, skipping
- * non-reloadable options so their values are not re-parsed. */
-int parse_cmdline(int argc, char **argv, int pass)
+ * `reloading` distinguishes a SIGHUP-driven reload from the initial load; the
+ * caller supplies it (read_settings passes False, settings_reload True). On a
+ * reload, non-reloadable options are skipped so their values are not
+ * re-parsed. */
+int parse_cmdline(int argc, char **argv, int pass, int reloading)
 {
-  static int reloading = 0;
   char *progname = argv[0];
   const char *slot[1];
 
@@ -1587,7 +1588,6 @@ int parse_cmdline(int argc, char **argv, int pass)
     exit(0);
   }
 
-  reloading = 1;
   return SUCCESS;
 }
 
@@ -1781,16 +1781,14 @@ static int parse_rc_line(char *buf, int lnum, int reloading)
 
 /* Parses the active rc file into *parse_target.
  *
- * Tracks whether this is the first call ("loading") or a subsequent one
- * ("reloading") via a static flag so the function can apply slightly
- * different behavior on a SIGHUP-driven reload without leaking that detail
- * into the public API. On reloads we (a) skip params with reloadable == 0
- * inside parse_rc_line(), and (b) downgrade fatal errors to a logged
- * FAILURE so a malformed live edit doesn't take down the tray. The first
- * load preserves the original strict behavior and DIEs on errors. */
-int parse_rc(void)
+ * `reloading` (supplied by the caller -- read_settings passes False,
+ * settings_reload True) selects slightly different behavior for a
+ * SIGHUP-driven reload: we (a) skip params with reloadable == 0 inside
+ * parse_rc_line(), and (b) downgrade fatal errors to a logged FAILURE so a
+ * malformed live edit doesn't take down the tray. The initial load keeps the
+ * strict behavior and DIEs on errors. */
+int parse_rc(int reloading)
 {
-  static int reloading = 0;
   FILE *cfg = NULL;
   int rc = SUCCESS;
   int lnum = 0;
@@ -1827,8 +1825,6 @@ int parse_rc(void)
     fclose(cfg);
   }
 
-  /* From here on, the function behaves as a reload. */
-  reloading = 1;
   return rc;
 }
 
@@ -1991,8 +1987,8 @@ int settings_reload(int argc, char **argv, struct Settings *out_old)
 
   parse_target = &tmp;
   init_default_settings();
-  parse_cmdline(argc, argv, 0);
-  ok = parse_rc();
+  parse_cmdline(argc, argv, 0, True);
+  ok = parse_rc(True);
   parse_target = &settings;
   if (ok != SUCCESS) {
     /* Syntax error / missing config / etc. tmp may be partially
@@ -2003,7 +1999,7 @@ int settings_reload(int argc, char **argv, struct Settings *out_old)
     return FAILURE;
   }
   parse_target = &tmp;
-  parse_cmdline(argc, argv, 1);
+  parse_cmdline(argc, argv, 1, True);
   parse_target = &settings;
 
   /* Snapshot live settings (shallow). out_old now aliases every live heap
@@ -2101,11 +2097,11 @@ int read_settings(int argc, char **argv)
 {
   init_default_settings();
   /* Parse 0th pass command line args */
-  parse_cmdline(argc, argv, 0);
+  parse_cmdline(argc, argv, 0, False);
   /* Parse configuration files */
-  parse_rc();
+  parse_rc(False);
   /* Parse 1st pass command line args */
-  parse_cmdline(argc, argv, 1);
+  parse_cmdline(argc, argv, 1, False);
   /* Display some settings */
   LOG_TRACE(("stalonetray " VERSION " [ " FEATURE_LIST " ]\n"));
   LOG_TRACE(("bg_color_str = \"%s\"\n", settings.bg_color_str));
