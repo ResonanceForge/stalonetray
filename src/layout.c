@@ -132,6 +132,10 @@ void layout_get_size(int *width, int *height)
 {
   *width = grid_sz.x * settings.slot_size.x;
   *height = grid_sz.y * settings.slot_size.y;
+  /* Account for the inter-icon gaps: one fewer than the number of occupied
+   * slots along each axis, and none when the grid is empty. */
+  if (grid_sz.x > 0) *width += (grid_sz.x - 1) * settings.slot_gap;
+  if (grid_sz.y > 0) *height += (grid_sz.y - 1) * settings.slot_gap;
   if (settings.vertical) swap((*width), (*height));
 }
 
@@ -204,6 +208,15 @@ int layout_translate_to_window(struct TrayIcon *ti)
         - (ti->l.grd_rect.y + ti->l.grd_rect.h) * settings.slot_size.y;
   ti->l.icn_rect.w = ti->l.grd_rect.w * settings.slot_size.y;
   ti->l.icn_rect.h = ti->l.grd_rect.h * settings.slot_size.y;
+  /* Insert slot_gap pixels between adjacent icons (none before the first one
+   * in a row or column): an icon at grid index n is pushed n gaps away from
+   * the gravity-anchored edge. grd_rect.x is the major axis here (swapped in
+   * for vertical trays), so the same expression spaces both rows and columns.
+   */
+  ti->l.icn_rect.x += (settings.icon_gravity & GRAV_W ? 1 : -1)
+      * ti->l.grd_rect.x * settings.slot_gap;
+  ti->l.icn_rect.y += (settings.icon_gravity & GRAV_N ? 1 : -1)
+      * ti->l.grd_rect.y * settings.slot_gap;
   /* Swap vert & horz dimentions back */
   if (settings.vertical) {
     swap(ti->l.grd_rect.w, ti->l.grd_rect.h);

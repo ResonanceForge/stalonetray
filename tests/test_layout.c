@@ -154,6 +154,86 @@ static void test_relayout_in_list_order_follows_list(void **state)
   assert_int_equal(hi->l.grd_rect.x, 0);
 }
 
+/* slot_gap inserts space between adjacent icons (west gravity): icon n is
+ * pushed n gaps to the right, and the tray grows by (count - 1) gaps with no
+ * gap before the first or after the last icon. */
+static void test_gap_spaces_icons_west(void **state)
+{
+  (void)state;
+  struct TrayIcon *g0 = add_icon_at(0x0, 0);
+  struct TrayIcon *g1 = add_icon_at(0x1, 1);
+  struct TrayIcon *g2 = add_icon_at(0x2, 2);
+  int w, h;
+
+  settings.slot_gap = 10;
+  layout_rescale();
+
+  assert_int_equal(g0->l.icn_rect.x, 0); /* no leading gap */
+  assert_int_equal(g1->l.icn_rect.x, 30); /* 20 + 1 gap */
+  assert_int_equal(g2->l.icn_rect.x, 60); /* 40 + 2 gaps */
+
+  /* 3 slots * 20px + 2 gaps * 10px, no trailing gap. */
+  layout_get_size(&w, &h);
+  assert_int_equal(w, 80);
+  assert_int_equal(h, 16);
+}
+
+/* A single icon gets no gap at all, and the tray is just one slot wide. */
+static void test_gap_single_icon_has_no_gap(void **state)
+{
+  (void)state;
+  struct TrayIcon *only = add_icon_at(0x0, 0);
+  int w, h;
+
+  settings.slot_gap = 10;
+  layout_rescale();
+
+  assert_int_equal(only->l.icn_rect.x, 0);
+  layout_get_size(&w, &h);
+  assert_int_equal(w, 20);
+}
+
+/* With east gravity the right edge stays anchored, so the gap pushes icons
+ * further left; the leftmost icon still lands at x=0 (no edge gap). */
+static void test_gap_east_gravity(void **state)
+{
+  (void)state;
+  struct TrayIcon *g0 = add_icon_at(0x0, 0);
+  struct TrayIcon *g1 = add_icon_at(0x1, 1);
+  struct TrayIcon *g2 = add_icon_at(0x2, 2);
+
+  settings.icon_gravity = GRAV_N | GRAV_E;
+  settings.slot_gap = 10;
+  tray_data.xsh.width = 80; /* the size layout_get_size would report */
+  layout_rescale();
+
+  assert_int_equal(g0->l.icn_rect.x, 60); /* rightmost, anchored */
+  assert_int_equal(g1->l.icn_rect.x, 30);
+  assert_int_equal(g2->l.icn_rect.x, 0); /* leftmost, no edge gap */
+}
+
+/* A vertical tray spaces icons along the major (y) axis. */
+static void test_gap_vertical(void **state)
+{
+  (void)state;
+  struct TrayIcon *g0 = add_icon_at(0x0, 0);
+  struct TrayIcon *g1 = add_icon_at(0x1, 1);
+  struct TrayIcon *g2 = add_icon_at(0x2, 2);
+  int w, h;
+
+  settings.vertical = 1;
+  settings.slot_gap = 10;
+  layout_rescale();
+
+  assert_int_equal(g0->l.icn_rect.y, 0);
+  assert_int_equal(g1->l.icn_rect.y, 26); /* 16 + 1 gap */
+  assert_int_equal(g2->l.icn_rect.y, 52); /* 32 + 2 gaps */
+
+  /* Major axis is vertical: height carries the gaps. */
+  layout_get_size(&w, &h);
+  assert_int_equal(h, 80); /* 3 * 16 + 2 * 10 */
+}
+
 int main(void)
 {
   const struct CMUnitTest tests[] = {
@@ -165,6 +245,12 @@ int main(void)
           test_rescale_recomputes_cell_spans, setup, teardown),
       cmocka_unit_test_setup_teardown(
           test_relayout_in_list_order_follows_list, setup, teardown),
+      cmocka_unit_test_setup_teardown(
+          test_gap_spaces_icons_west, setup, teardown),
+      cmocka_unit_test_setup_teardown(
+          test_gap_single_icon_has_no_gap, setup, teardown),
+      cmocka_unit_test_setup_teardown(test_gap_east_gravity, setup, teardown),
+      cmocka_unit_test_setup_teardown(test_gap_vertical, setup, teardown),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }

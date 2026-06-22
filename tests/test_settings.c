@@ -305,6 +305,34 @@ static void test_settings_reload_adopts_scrollbars_step(void **state)
   cleanup_tmp_rc(rc_path);
 }
 
+/* slot_gap is reloadable, and a negative value is clamped to zero. */
+static void test_settings_reload_adopts_slot_gap(void **state)
+{
+  (void)state;
+  settings.slot_gap = 0;
+
+  char *rc_path = write_tmp_rc("slot_gap 12\n");
+  free(settings.config_fname);
+  settings.config_fname = strdup(rc_path);
+
+  char *argv[] = {(char *)"test"};
+  struct Settings old;
+  assert_int_equal(settings_reload(1, argv, &old), 1 /* SUCCESS */);
+  assert_int_equal(settings.slot_gap, 12);
+  free_settings(&old);
+  cleanup_tmp_rc(rc_path);
+
+  settings.slot_gap = 12;
+  rc_path = write_tmp_rc("slot_gap -5\n");
+  free(settings.config_fname);
+  settings.config_fname = strdup(rc_path);
+  assert_int_equal(settings_reload(1, argv, &old), 1 /* SUCCESS */);
+  assert_int_equal(settings.slot_gap, 0);
+
+  free_settings(&old);
+  cleanup_tmp_rc(rc_path);
+}
+
 /* ------------------------------------------------------------- parse_rc */
 
 /* Convenience: drop a one-liner rc into a temp file and point
@@ -596,6 +624,8 @@ int main(void)
       cmocka_unit_test_setup_teardown(
           test_settings_reload_adopts_scrollbars_step, reset_settings,
           teardown_settings),
+      cmocka_unit_test_setup_teardown(test_settings_reload_adopts_slot_gap,
+          reset_settings, teardown_settings),
       /* parse_rc value-level tests. Pattern to extend: write a one-line
        * rc with parse_rc_with_body(), then assert the field's new value
        * on `settings`. parse_rc_with_body() passes reloading == False, so

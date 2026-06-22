@@ -72,6 +72,7 @@ struct Settings {
   /* Values */
   int icon_size; /* Icon size */
   struct Point slot_size; /* Grid slot size */
+  int slot_gap; /* Gap in pixels inserted between adjacent icons */
   int grow_gravity; /* Icon gravity (interpretation of icon_gravity_str) */
   int icon_gravity; /* Grow gravity (interpretation of grow_gravity_str) */
   int win_gravity; /* Tray window gravity (computed using grow gravity) */

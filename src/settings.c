@@ -106,6 +106,7 @@ void init_default_settings(void)
   parse_target->icon_size = FALLBACK_ICON_SIZE;
   parse_target->slot_size.x = -1;
   parse_target->slot_size.y = -1;
+  parse_target->slot_gap = 0;
   parse_target->deco_flags = DECO_NONE;
   parse_target->shrink_back_mode = 1;
   parse_target->sticky = 1;
@@ -1085,6 +1086,23 @@ struct Param params[] = {
     },
     {
       .short_name = NULL,
+      .long_name = "--slot-gap",
+      .rc_name = "slot_gap",
+      .struct_offset = offsetof(struct Settings, slot_gap),
+
+      .pass = 1,
+
+      .min_argc = 1,
+      .max_argc = 1,
+
+      .default_argc = 0,
+      .default_argv = NULL,
+
+      .parser = (param_parser_t)&parse_int,
+      .reloadable = True
+    },
+    {
+      .short_name = NULL,
       .long_name = "--sticky",
       .rc_name = "sticky",
       .struct_offset = offsetof(struct Settings, sticky),
@@ -1437,6 +1455,7 @@ void usage(char *progname)
       "    --slot-size <w>[x<h>]       set icon slot size in pixels\n"
       "                                if omitted, hight is set equal to "
       "width\n"
+      "    --slot-gap <pixels>         gap in pixels inserted between icons\n"
       "    --skip-taskbar              hide tray`s window from the taskbar\n"
       "    --sticky                    make tray`s window sticky across "
       "multiple\n"
@@ -1872,6 +1891,7 @@ void interpret_settings(void)
     settings.slot_size.x = settings.icon_size;
   if (settings.slot_size.y < settings.icon_size)
     settings.slot_size.y = settings.icon_size;
+  val_range(settings.slot_gap, 0, INT_MAX);
   /* Sanitize scrollbar settings */
   if (settings.scrollbars_mode != SB_MODE_NONE) {
     val_range(settings.scrollbars_inc, settings.slot_size.x / 2, INT_MAX);
@@ -2063,6 +2083,7 @@ int settings_reload(int argc, char **argv, struct Settings *out_old)
   ADOPT(wnd_type);
   ADOPT(ignored_classes);
   ADOPT(scrollbars_inc);
+  ADOPT(slot_gap);
 #undef ADOPT
   /* slot_size has no heap content, so adopt it with a plain copy. */
   settings.slot_size = tmp.slot_size;
@@ -2103,6 +2124,7 @@ int settings_reload(int argc, char **argv, struct Settings *out_old)
   interpret_max_tray_dims();
   if (settings.scrollbars_mode != SB_MODE_NONE)
     val_range(settings.scrollbars_inc, settings.slot_size.x / 2, INT_MAX);
+  val_range(settings.slot_gap, 0, INT_MAX);
 
   /* Re-parse colors into a temporary first; on parse failure leave the
    * old XColor in place so the tray doesn't end up with a garbage pixel.
@@ -2163,6 +2185,7 @@ int read_settings(int argc, char **argv)
   LOG_TRACE(("shrink_back_mode = %d\n", settings.shrink_back_mode));
   LOG_TRACE(("slot_size.x = %d\n", settings.slot_size.x));
   LOG_TRACE(("slot_size.y = %d\n", settings.slot_size.y));
+  LOG_TRACE(("slot_gap = %d\n", settings.slot_gap));
   LOG_TRACE(("vertical = %d\n", settings.vertical));
   LOG_TRACE(("xsync = %d\n", settings.xsync));
   return SUCCESS;
