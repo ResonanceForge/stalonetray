@@ -933,7 +933,8 @@ struct Param params[] = {
       .default_argc = 0,
       .default_argv = NULL,
 
-      .parser = (param_parser_t)&parse_int
+      .parser = (param_parser_t)&parse_int,
+      .reloadable = True
     },
     {
       .short_name = NULL,
@@ -1079,7 +1080,8 @@ struct Param params[] = {
       .default_argc = 0,
       .default_argv = NULL,
 
-      .parser = (param_parser_t)&parse_size
+      .parser = (param_parser_t)&parse_size,
+      .reloadable = True
     },
     {
       .short_name = NULL,
@@ -1828,6 +1830,34 @@ int parse_rc(int reloading)
   return rc;
 }
 
+/* Derive the maximal tray dimensions (in pixels) from max_geometry_str and the
+ * current slot size: an unset dimension means "as large as the root window",
+ * otherwise the value is in slots. Depends on slot_size, orig_tray_dims and the
+ * cached root window size, so it can be re-run on a slot_size reload. */
+static void interpret_max_tray_dims(void)
+{
+  int dummy;
+  XParseGeometry(settings.max_geometry_str, &dummy, &dummy,
+      (unsigned int *)&settings.max_tray_dims.x,
+      (unsigned int *)&settings.max_tray_dims.y);
+  LOG_TRACE(("max geometry from max_geometry_str: %dx%d\n",
+      settings.max_tray_dims.x, settings.max_tray_dims.y));
+  if (!settings.max_tray_dims.x)
+    settings.max_tray_dims.x = tray_data.root_wnd.width;
+  else {
+    settings.max_tray_dims.x *= settings.slot_size.x;
+    val_range(settings.max_tray_dims.x, settings.orig_tray_dims.x, INT_MAX);
+  }
+  if (!settings.max_tray_dims.y)
+    settings.max_tray_dims.y = tray_data.root_wnd.height;
+  else {
+    settings.max_tray_dims.y *= settings.slot_size.y;
+    val_range(settings.max_tray_dims.y, settings.orig_tray_dims.y, INT_MAX);
+  }
+  LOG_TRACE(("max geometry after normalization: %dx%d\n",
+      settings.max_tray_dims.x, settings.max_tray_dims.y));
+}
+
 /* Interpret all settings that need an open display or other settings */
 void interpret_settings(void)
 {
@@ -1835,7 +1865,6 @@ void interpret_settings(void)
       ForgetGravity, SouthGravity, SouthEastGravity, SouthWestGravity,
       ForgetGravity, NorthGravity, NorthEastGravity, NorthWestGravity};
   int geom_flags;
-  int dummy;
   XWindowAttributes root_wa;
   /* Sanitize icon size */
   val_range(settings.icon_size, MIN_ICON_SIZE, INT_MAX);
@@ -1940,25 +1969,7 @@ void interpret_settings(void)
   else
     settings.geom_gravity = NorthWestGravity;
   /* Set tray maximal width/height */
-  geom_flags = XParseGeometry(settings.max_geometry_str, &dummy, &dummy,
-      (unsigned int *)&settings.max_tray_dims.x,
-      (unsigned int *)&settings.max_tray_dims.y);
-  LOG_TRACE(("max geometry from max_geometry_str: %dx%d\n",
-      settings.max_tray_dims.x, settings.max_tray_dims.y));
-  if (!settings.max_tray_dims.x)
-    settings.max_tray_dims.x = root_wa.width;
-  else {
-    settings.max_tray_dims.x *= settings.slot_size.x;
-    val_range(settings.max_tray_dims.x, settings.orig_tray_dims.x, INT_MAX);
-  }
-  if (!settings.max_tray_dims.y)
-    settings.max_tray_dims.y = root_wa.height;
-  else {
-    settings.max_tray_dims.y *= settings.slot_size.y;
-    val_range(settings.max_tray_dims.y, settings.orig_tray_dims.y, INT_MAX);
-  }
-  LOG_TRACE(("max geometry after normalization: %dx%d\n",
-      settings.max_tray_dims.x, settings.max_tray_dims.y));
+  interpret_max_tray_dims();
   /* XXX: this assumes certain degree of symmetry and in some point
    * in the future this may not be the case... */
   tray_calc_window_size(0, 0, &tray_data.scrollbars_data.scroll_base.x,
@@ -2051,7 +2062,10 @@ int settings_reload(int argc, char **argv, struct Settings *out_old)
   ADOPT(wnd_layer);
   ADOPT(wnd_type);
   ADOPT(ignored_classes);
+  ADOPT(scrollbars_inc);
 #undef ADOPT
+  /* slot_size has no heap content, so adopt it with a plain copy. */
+  settings.slot_size = tmp.slot_size;
 
   /* Discard non-reloadable values tmp accumulated (e.g. defaults assigned
    * by init_default_settings or cmdline overrides parse_cmdline let
@@ -2070,6 +2084,25 @@ int settings_reload(int argc, char **argv, struct Settings *out_old)
     settings.transparent = False;
   }
   if (settings.transparent) settings.parent_bg = False;
+
+  /* slot_size keys several derived geometry values. Clamp it to the icon size
+   * (icon_size is not reloadable, so it is a stable floor), then carry the
+   * slot-unit tray dimensions interpret_settings() computed at startup over to
+   * the new slot size: orig_tray_dims is an integral number of slots, so it
+   * rescales exactly, and the max dimensions are recomputed from that. */
+  if (settings.slot_size.x < settings.icon_size)
+    settings.slot_size.x = settings.icon_size;
+  if (settings.slot_size.y < settings.icon_size)
+    settings.slot_size.y = settings.icon_size;
+  if (out_old->slot_size.x > 0 && settings.slot_size.x != out_old->slot_size.x)
+    settings.orig_tray_dims.x =
+        settings.orig_tray_dims.x / out_old->slot_size.x * settings.slot_size.x;
+  if (out_old->slot_size.y > 0 && settings.slot_size.y != out_old->slot_size.y)
+    settings.orig_tray_dims.y =
+        settings.orig_tray_dims.y / out_old->slot_size.y * settings.slot_size.y;
+  interpret_max_tray_dims();
+  if (settings.scrollbars_mode != SB_MODE_NONE)
+    val_range(settings.scrollbars_inc, settings.slot_size.x / 2, INT_MAX);
 
   /* Re-parse colors into a temporary first; on parse failure leave the
    * old XColor in place so the tray doesn't end up with a garbage pixel.

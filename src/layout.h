@@ -58,6 +58,11 @@ int layout_translate_to_window(struct TrayIcon *ti);
  * Used by drag-to-reorder to commit the new sequence. */
 int layout_relayout_in_list_order(void);
 
+/* Re-translate the existing grid layout for the current slot size, keeping
+ * each icon in its current grid slot (and thus its on-screen order). Used when
+ * only the slot pitch changes, e.g. a slot_size reload. */
+int layout_rescale(void);
+
 /* Return next icon in tab chain */
 struct TrayIcon *layout_next(struct TrayIcon *current);
 

@@ -574,6 +574,27 @@ int layout_unset_flag(struct TrayIcon *ti)
   return NO_MATCH;
 }
 
+int layout_rescale(void)
+{
+  /* Re-translate the existing grid layout into window coordinates for the
+   * current slot size, keeping every icon in the grid slot it already
+   * occupies. Used when only the slot pitch changes (e.g. a slot_size
+   * reload): the grid arrangement -- and therefore the on-screen order --
+   * must stay put. Unlike layout_relayout_in_list_order, this never derives
+   * positions from list order, which is not guaranteed to mirror grid order
+   * (an icon shown via icon_track_visibility_changes is placed by best fit
+   * without the order machinery that keeps the two in sync). Only the per-cell
+   * spans (which depend on the slot size) and the overall grid size are
+   * recomputed. */
+  grid_sz.x = 0;
+  grid_sz.y = 0;
+  icon_list_forall(&grid_translate_from_window);
+  icon_list_forall(&grid_recalc_size);
+  icon_list_forall(&layout_translate_to_window);
+  LOG_TRACE(("rescale: grid size %dx%d\n", grid_sz.x, grid_sz.y));
+  return SUCCESS;
+}
+
 int layout_relayout_in_list_order(void)
 {
   /* Lay icons out by walking the list and assigning sequential grid slots.

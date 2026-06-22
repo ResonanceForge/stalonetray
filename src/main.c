@@ -894,6 +894,17 @@ static void apply_settings_reload(const struct Settings *old)
   }
 #endif
 
+  if (old->slot_size.x != settings.slot_size.x
+      || old->slot_size.y != settings.slot_size.y) {
+    /* slot_size changes the grid pitch, so re-translate every icon for the new
+     * pitch (keeping its grid slot, hence its on-screen order) and resize the
+     * tray window. tray_update_window_props's resize emits a ConfigureNotify
+     * that re-translates icon positions for the new window size. */
+    layout_rescale();
+    embedder_update_positions(True);
+    tray_update_window_props();
+  }
+
   /* Walk every reload, even when the list looks unchanged: a config edit
    * is the only reason we got here and the cost is one X round-trip per
    * icon. */
