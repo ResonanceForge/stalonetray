@@ -327,6 +327,16 @@
   </varlistentry>
 
   <varlistentry>
+  <term><option>--slot-gap</option> <replaceable>pixels</replaceable></term>
+  <term><option>slot_gap</option> <replaceable>pixels</replaceable></term>
+  <listitem><para>Insert <replaceable>pixels</replaceable> of empty space
+  between adjacent icons. The gap is added only between icons, never before the
+  first or after the last one, so <replaceable>n</replaceable> icons are
+  separated by <replaceable>n</replaceable>-1 gaps. Defaults to 0.
+  </para></listitem>
+  </varlistentry>
+
+  <varlistentry>
   <term><option>--scrollbars</option> <replaceable>mode</replaceable></term>
   <term><option>scrollbars</option> <replaceable>mode</replaceable></term>
   <listitem><para>Set scrollbar mode. Possible values:

@@ -54,6 +54,11 @@ icon_size 24
                              # defaults to icon size
 slot_size 32x64
 
+# slot_gap <pixels>          # gap in pixels inserted between adjacent icons;
+                             # no gap is added before the first or after the
+                             # last icon; defaults to 0
+# slot_gap 4
+
 # log_level <level>          # controls the amount of logging output, level can
                              # be err (default), info, or trace (enabled only
                              # when stalonetray configured with --enable-debug)

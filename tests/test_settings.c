@@ -215,6 +215,124 @@ static void test_settings_reload_no_double_free(void **state)
   cleanup_tmp_rc(rc_path);
 }
 
+/* slot_size is reloadable: a new value in the config is adopted into the live
+ * settings (a single number sets both axes, like the cmdline/rc parser). */
+static void test_settings_reload_adopts_slot_size(void **state)
+{
+  (void)state;
+  settings.icon_size = 16;
+  settings.slot_size.x = 20;
+  settings.slot_size.y = 20;
+
+  char *rc_path = write_tmp_rc("slot_size 40\n");
+  free(settings.config_fname);
+  settings.config_fname = strdup(rc_path);
+
+  char *argv[] = {(char *)"test"};
+  struct Settings old;
+  assert_int_equal(settings_reload(1, argv, &old), 1 /* SUCCESS */);
+  assert_int_equal(settings.slot_size.x, 40);
+  assert_int_equal(settings.slot_size.y, 40);
+
+  free_settings(&old);
+  cleanup_tmp_rc(rc_path);
+}
+
+/* A reloaded slot_size below the icon size is clamped up to it, mirroring
+ * interpret_settings(); icon_size itself is not reloadable. */
+static void test_settings_reload_clamps_slot_size_to_icon_size(void **state)
+{
+  (void)state;
+  settings.icon_size = 24;
+  settings.slot_size.x = 32;
+  settings.slot_size.y = 32;
+
+  char *rc_path = write_tmp_rc("slot_size 8\n");
+  free(settings.config_fname);
+  settings.config_fname = strdup(rc_path);
+
+  char *argv[] = {(char *)"test"};
+  struct Settings old;
+  assert_int_equal(settings_reload(1, argv, &old), 1 /* SUCCESS */);
+  assert_int_equal(settings.slot_size.x, 24);
+  assert_int_equal(settings.slot_size.y, 24);
+
+  free_settings(&old);
+  cleanup_tmp_rc(rc_path);
+}
+
+/* orig_tray_dims is an integral number of slots, so a slot_size reload must
+ * carry it over to the new pitch (here 5x2 slots at 20px -> 30px). */
+static void test_settings_reload_rescales_orig_tray_dims(void **state)
+{
+  (void)state;
+  settings.icon_size = 16;
+  settings.slot_size.x = 20;
+  settings.slot_size.y = 20;
+  settings.orig_tray_dims.x = 100; /* 5 slots */
+  settings.orig_tray_dims.y = 40; /* 2 slots */
+
+  char *rc_path = write_tmp_rc("slot_size 30\n");
+  free(settings.config_fname);
+  settings.config_fname = strdup(rc_path);
+
+  char *argv[] = {(char *)"test"};
+  struct Settings old;
+  assert_int_equal(settings_reload(1, argv, &old), 1 /* SUCCESS */);
+  assert_int_equal(settings.orig_tray_dims.x, 150);
+  assert_int_equal(settings.orig_tray_dims.y, 60);
+
+  free_settings(&old);
+  cleanup_tmp_rc(rc_path);
+}
+
+/* scrollbars_step (scrollbars_inc) is reloadable too. */
+static void test_settings_reload_adopts_scrollbars_step(void **state)
+{
+  (void)state;
+  settings.scrollbars_inc = 5;
+
+  char *rc_path = write_tmp_rc("scrollbars_step 50\n");
+  free(settings.config_fname);
+  settings.config_fname = strdup(rc_path);
+
+  char *argv[] = {(char *)"test"};
+  struct Settings old;
+  assert_int_equal(settings_reload(1, argv, &old), 1 /* SUCCESS */);
+  assert_int_equal(settings.scrollbars_inc, 50);
+
+  free_settings(&old);
+  cleanup_tmp_rc(rc_path);
+}
+
+/* slot_gap is reloadable, and a negative value is clamped to zero. */
+static void test_settings_reload_adopts_slot_gap(void **state)
+{
+  (void)state;
+  settings.slot_gap = 0;
+
+  char *rc_path = write_tmp_rc("slot_gap 12\n");
+  free(settings.config_fname);
+  settings.config_fname = strdup(rc_path);
+
+  char *argv[] = {(char *)"test"};
+  struct Settings old;
+  assert_int_equal(settings_reload(1, argv, &old), 1 /* SUCCESS */);
+  assert_int_equal(settings.slot_gap, 12);
+  free_settings(&old);
+  cleanup_tmp_rc(rc_path);
+
+  settings.slot_gap = 12;
+  rc_path = write_tmp_rc("slot_gap -5\n");
+  free(settings.config_fname);
+  settings.config_fname = strdup(rc_path);
+  assert_int_equal(settings_reload(1, argv, &old), 1 /* SUCCESS */);
+  assert_int_equal(settings.slot_gap, 0);
+
+  free_settings(&old);
+  cleanup_tmp_rc(rc_path);
+}
+
 /* ------------------------------------------------------------- parse_rc */
 
 /* Convenience: drop a one-liner rc into a temp file and point
@@ -494,6 +612,19 @@ int main(void)
           test_settings_reload_rolls_back_on_syntax_error, reset_settings,
           teardown_settings),
       cmocka_unit_test_setup_teardown(test_settings_reload_no_double_free,
+          reset_settings, teardown_settings),
+      cmocka_unit_test_setup_teardown(test_settings_reload_adopts_slot_size,
+          reset_settings, teardown_settings),
+      cmocka_unit_test_setup_teardown(
+          test_settings_reload_clamps_slot_size_to_icon_size, reset_settings,
+          teardown_settings),
+      cmocka_unit_test_setup_teardown(
+          test_settings_reload_rescales_orig_tray_dims, reset_settings,
+          teardown_settings),
+      cmocka_unit_test_setup_teardown(
+          test_settings_reload_adopts_scrollbars_step, reset_settings,
+          teardown_settings),
+      cmocka_unit_test_setup_teardown(test_settings_reload_adopts_slot_gap,
           reset_settings, teardown_settings),
       /* parse_rc value-level tests. Pattern to extend: write a one-line
        * rc with parse_rc_with_body(), then assert the field's new value
